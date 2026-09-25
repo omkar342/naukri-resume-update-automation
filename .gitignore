@@ -1,0 +1,18 @@
+# Environment variables and secrets
+.env
+
+# Temporary resume copies
+temp_resumes/
+cron.log
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
