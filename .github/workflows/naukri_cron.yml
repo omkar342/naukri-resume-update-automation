@@ -33,9 +33,9 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Decode Resume from Secret
+      - name: Decrypt Resume
         run: |
-          echo "${{ secrets.RESUME_BASE64 }}" | base64 -d > master_resume.pdf
+          openssl enc -d -aes-256-cbc -pbkdf2 -in master_resume.enc -out master_resume.pdf -k "${{ secrets.RESUME_PASSPHRASE }}"
 
       - name: Run Naukri Resume Updater
         env:
