@@ -51,6 +51,10 @@ class Config:
             errors.append(
                 "RESUME_PATH is missing or using placeholder in .env file."
             )
+        elif self.resume_path.is_dir():
+            errors.append(
+                f"No PDF resume files found in directory: {self.resume_path}"
+            )
         elif not self.resume_path.is_file():
             errors.append(f"Resume file not found at: {self.resume_path}")
 
@@ -63,8 +67,23 @@ class Config:
         return errors
 
 
+def get_latest_pdf(directory: Path) -> Optional[Path]:
+    """Finds the most recently modified PDF file in the given directory."""
+    if not directory.is_dir():
+        return None
+    pdf_files = [f for f in directory.glob("*.pdf") if f.is_file()]
+    if not pdf_files:
+        return None
+    return max(pdf_files, key=lambda f: f.stat().st_mtime)
+
+
 def resolve_resume_path(path_str: str, project_dir: Path) -> Path:
-    """Resolves path string handling quotes, tilde, and relative paths."""
+    """Resolves path string handling quotes, tilde, and relative paths.
+
+    Supports direct file paths, directory paths (picks the newest PDF),
+    and falls back to the newest PDF in the folder if an explicitly
+    configured dated filename is missing.
+    """
     if not path_str:
         return Path()
     cleaned = path_str.strip().strip('"').strip("'")
@@ -72,6 +91,28 @@ def resolve_resume_path(path_str: str, project_dir: Path) -> Path:
     resolved = Path(expanded)
     if not resolved.is_absolute():
         resolved = (project_dir / resolved).resolve()
+
+    # Direct existing file
+    if resolved.is_file():
+        return resolved
+
+    # Directory specified: pick the latest modified PDF
+    if resolved.is_dir():
+        latest = get_latest_pdf(resolved)
+        if latest:
+            return latest
+
+    # If the configured file no longer exists, but the parent directory contains PDFs,
+    # fallback to the latest modified PDF in that directory
+    if not resolved.exists() and resolved.parent.is_dir():
+        latest = get_latest_pdf(resolved.parent)
+        if latest:
+            print(
+                f"[INFO] Configured resume '{resolved.name}' not found. "
+                f"Auto-selected latest PDF: '{latest.name}'"
+            )
+            return latest
+
     return resolved
 
 
