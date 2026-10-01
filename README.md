@@ -25,7 +25,13 @@ Naukri prioritizes candidate profiles that are updated frequently. By automating
 ## 📁 Repository Structure
 
 ```text
-├── naukri_updater.py      # Core automation script
+├── src/
+│   ├── config.py          # Configuration loading, validation & path resolution
+│   ├── constants.py       # Selectors, timeouts, and URLs
+│   ├── driver.py          # Chrome WebDriver initialization & anti-bot flags
+│   ├── file_utils.py      # Resume copying, stem cleaning & renaming
+│   └── naukri_client.py   # Selenium workflow & upload automation
+├── naukri_updater.py      # Main CLI entrypoint
 ├── requirements.txt       # Python package dependencies
 ├── .env.example           # Example configuration template
 ├── .gitignore             # Ignores credentials (.env) and temp folders
@@ -114,11 +120,13 @@ python3 naukri_updater.py --headless
 
 ---
 
-## ⏰ Automating with Linux Cron
+## ⏰ Scheduling & Background Automation
+
+### 🐧 Linux (Cron & Startup)
 
 You can set up a cron job to update your resume automatically at regular intervals whenever your computer is powered on.
 
-### Example: Run Every 30 Minutes
+#### Periodic (Every 30 Minutes):
 1. Open crontab in your terminal:
    ```bash
    crontab -e
@@ -127,12 +135,77 @@ You can set up a cron job to update your resume automatically at regular interva
    ```cron
    */30 * * * * cd "/path/to/naukri-resume-update-automation" && /path/to/python3 naukri_updater.py --headless >> cron.log 2>&1
    ```
-3. Save and exit.
 
-### Helpful Cron Commands:
+#### Run on System Startup:
+Add `@reboot` with a short delay so Wi-Fi connects first:
+```cron
+@reboot sleep 45 && cd "/path/to/naukri-resume-update-automation" && /path/to/python3 naukri_updater.py --headless >> cron.log 2>&1
+```
+
+#### Helpful Cron Commands:
 - **List active cron jobs**: `crontab -l`
 - **View live execution logs**: `tail -f cron.log`
 - **Remove/Pause cron job**: `crontab -e` (comment out with `#`)
+
+---
+
+### 🪟 Windows (Task Scheduler)
+
+On Windows, use **Windows Task Scheduler** (`taskschd.msc`) to run the automation periodically, on startup, and when opening your laptop.
+
+> [!TIP]
+> Use `pythonw.exe` instead of `python.exe` so the script runs completely in the background without popping up a black command prompt window.
+
+#### Option A: Quick Setup via PowerShell (Recommended)
+Open PowerShell and run the following command (adjust paths to match your system):
+
+```powershell
+$action = New-ScheduledTaskAction `
+    -Execute "pythonw.exe" `
+    -Argument "naukri_updater.py --headless" `
+    -WorkingDirectory "C:\path\to\naukri-resume-update-automation"
+
+# Trigger 1: Run every time you log in / startup
+$triggerLogon = New-ScheduledTaskTrigger -AtLogon
+
+# Trigger 2: Run every 30 minutes
+$triggerRepeat = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+    -RepetitionInterval (New-TimeSpan -Minutes 30) `
+    -RepetitionDuration ([TimeSpan]::MaxValue)
+
+$settings = New-ScheduledTaskSettingsSet `
+    -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries `
+    -StartWhenAvailable
+
+Register-ScheduledTask `
+    -TaskName "NaukriResumeUpdate" `
+    -Action $action `
+    -Trigger @($triggerLogon, $triggerRepeat) `
+    -Settings $settings `
+    -Description "Automated Naukri Resume Updates"
+```
+
+#### Option B: Setup via Graphical Interface (Task Scheduler GUI)
+1. Press `Win + R`, type `taskschd.msc`, and press **Enter**.
+2. In the right panel, click **Create Task...** (do not choose "Create Basic Task"):
+   - **General Tab**:
+     - Name: `Naukri Resume Updater`
+     - Select: **Run only when user is logged on**
+   - **Triggers Tab**:
+     - *To run on startup*: Click **New...** -> Select **At log on** -> Click **OK**.
+     - *To run periodically*: Click **New...** -> Select **On a schedule** (Daily) -> Check **Repeat task every**: `30 minutes` for a duration of: `Indefinitely` -> Click **OK**.
+     - *(Optional: Run on laptop lid open)*: Click **New...** -> Select **On an event** -> Log: `System`, Source: `Power-Troubleshooter`, Event ID: `1`.
+   - **Actions Tab**:
+     - Click **New...** -> Action: **Start a program**.
+     - Program/script: `pythonw.exe` (or full path, e.g. `C:\Users\<User>\AppData\Local\Programs\Python\Python311\pythonw.exe`).
+     - Add arguments: `naukri_updater.py --headless`
+     - Start in: `C:\path\to\naukri-resume-update-automation`
+   - **Conditions Tab** (Crucial for Laptops!):
+     - **Uncheck**: *"Start the task only if the computer is on AC power"* (so it works on battery).
+     - **Uncheck**: *"Stop if the computer switches to battery power"*.
+     - **Check**: *"Start only if the following network connection is available: Any connection"*.
+3. Click **OK** to save.
 
 ---
 
