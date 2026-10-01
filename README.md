@@ -149,14 +149,28 @@ Add `@reboot` with a short delay so Wi-Fi connects first:
 
 ---
 
-### 🪟 Windows (Task Scheduler)
+### 🪟 Windows (Task Scheduler & Cron)
 
-On Windows, use **Windows Task Scheduler** (`taskschd.msc`) to run the automation periodically, on startup, and when opening your laptop.
+On Windows, use **Windows Task Scheduler** (via command-line `schtasks` or GUI) or **WSL** to run the automation periodically, on startup, and when opening your laptop.
 
 > [!TIP]
 > Use `pythonw.exe` instead of `python.exe` so the script runs completely in the background without popping up a black command prompt window.
 
-#### Option A: Quick Setup via PowerShell (Recommended)
+#### Option A: Command-Line Setup via `schtasks` (Cron-Style CLI)
+If you prefer setting up jobs quickly from the terminal just like `crontab`, use Windows' built-in `schtasks` command in **Command Prompt** or **PowerShell**:
+
+```cmd
+:: Schedule to run every 30 minutes (like */30 * * * *):
+schtasks /create /tn "NaukriResumeUpdate" /tr "pythonw.exe \"C:\path\to\naukri-resume-update-automation\naukri_updater.py\" --headless" /sc minute /mo 30
+
+:: Schedule to run on startup / login (like @reboot):
+schtasks /create /tn "NaukriStartupUpdate" /tr "pythonw.exe \"C:\path\to\naukri-resume-update-automation\naukri_updater.py\" --headless" /sc onlogon
+```
+
+- **Query active task:** `schtasks /query /tn "NaukriResumeUpdate"`
+- **Delete task:** `schtasks /delete /tn "NaukriResumeUpdate" /f`
+
+#### Option B: Setup via PowerShell Script
 Open PowerShell and run the following command (adjust paths to match your system):
 
 ```powershell
@@ -186,7 +200,7 @@ Register-ScheduledTask `
     -Description "Automated Naukri Resume Updates"
 ```
 
-#### Option B: Setup via Graphical Interface (Task Scheduler GUI)
+#### Option C: Setup via Graphical Interface (Task Scheduler GUI)
 1. Press `Win + R`, type `taskschd.msc`, and press **Enter**.
 2. In the right panel, click **Create Task...** (do not choose "Create Basic Task"):
    - **General Tab**:
@@ -206,6 +220,15 @@ Register-ScheduledTask `
      - **Uncheck**: *"Stop if the computer switches to battery power"*.
      - **Check**: *"Start only if the following network connection is available: Any connection"*.
 3. Click **OK** to save.
+
+#### Option D: Real Linux Cron via WSL (Windows Subsystem for Linux)
+If you have WSL installed, you can use the exact same Linux `crontab -e`:
+1. Open your Ubuntu WSL terminal.
+2. Run `crontab -e` and add:
+   ```cron
+   */30 * * * * cd "/mnt/c/path/to/naukri-resume-update-automation" && python3 naukri_updater.py --headless >> cron.log 2>&1
+   ```
+3. Ensure the cron service is active: `sudo service cron start`
 
 ---
 
