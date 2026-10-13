@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Primary Profile",
+    "email": "user1@example.com",
+    "password": "your_naukri_password_1",
+    "resume_path": "/path/to/your/first_resume.pdf",
+    "rename_mode": "date_time"
+  },
+  {
+    "name": "Secondary Profile",
+    "email": "user2@example.com",
+    "password": "your_naukri_password_2",
+    "resume_path": "/path/to/your/second_resume.pdf",
+    "rename_mode": "date_first"
+  }
+]

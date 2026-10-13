@@ -12,6 +12,7 @@ Naukri prioritizes candidate profiles that are updated frequently. By automating
 
 ## ✨ Features
 
+- 👥 **Multi-Account Support**: Update multiple Naukri accounts sequentially in a single run. Configure accounts in `.env` (e.g. `NAUKRI_EMAIL_1`, `NAUKRI_EMAIL_2`) or via an optional `accounts.json` file. Each account can have its own dedicated resume or share a default master resume!
 - 🕒 **Smart Resume Renaming**: Automatically creates a temporary copy of your resume with today's date and a fresh timestamp (e.g., `Omkar_Jadhav_Resume_2026-09-25_205446.pdf`) before uploading, keeping your master resume intact.
 - 🧹 **Automatic Stem Cleaning**: Strips out old dates or redundant timestamps from the original filename to keep the uploaded filename clean and professional.
 - 🛡️ **Anti-Bot & Stealth Mode**: Configured with Chrome anti-automation flags (`disable-blink-features=AutomationControlled`, realistic User-Agent, CDP overrides) to minimize bot detection.
@@ -19,6 +20,7 @@ Naukri prioritizes candidate profiles that are updated frequently. By automating
 - 🕶️ **Headless & Visible Modes**: Run visibly in a browser window during setup, or silently in the background (`--headless`) for cron scheduling.
 - 🧪 **Preview Mode**: Test and preview how your resume will be renamed using `--test-rename` without logging in.
 - ⚡ **Modern Selenium 4 Support**: Uses Selenium Manager directly—no manual ChromeDriver downloads or third-party managers required.
+
 
 ---
 
@@ -33,8 +35,9 @@ Naukri prioritizes candidate profiles that are updated frequently. By automating
 │   └── naukri_client.py   # Selenium workflow & upload automation
 ├── naukri_updater.py      # Main CLI entrypoint
 ├── requirements.txt       # Python package dependencies
+├── accounts.example.json  # Multi-account JSON template
 ├── .env.example           # Example configuration template
-├── .gitignore             # Ignores credentials (.env) and temp folders
+├── .gitignore             # Ignores credentials (.env, accounts.json) and temp folders
 └── README.md              # Project documentation
 ```
 
@@ -63,47 +66,86 @@ cd naukri-resume-update-automation
 pip install -r requirements.txt
 ```
 
-### 3. Create your `.env` File
+### 3. Configure Your Credentials
+
+You can configure single or multiple accounts using either **`.env`** (recommended) or an **`accounts.json`** file.
+
+#### Option A: Via `.env` (Numbered Variables)
 Copy the example template to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and fill in your details:
+Open `.env` and configure your account(s):
 ```env
-# Naukri Account Credentials
-NAUKRI_EMAIL=your_email@example.com
-NAUKRI_PASSWORD=your_naukri_password
-
-# Path to your master resume file (PDF or DOCX)
+# Default / Fallback resume
 RESUME_PATH="/home/username/Documents/My_Resume.pdf"
 
-# Resume Renaming Mode
-# Options:
-#   - date_time  : (Default) Name first -> Resume_2026-09-25_203512.pdf
-#   - date_first : Date first       -> 2026-09-25_Resume_203512.pdf
-#   - timestamp  : Unix timestamp   -> Resume_1727276712.pdf
-#   - date_only  : Date only        -> Resume_2026-09-25.pdf
+# --- Account 1 ---
+NAUKRI_NAME_1="Primary Profile"
+NAUKRI_EMAIL_1=first_email@example.com
+NAUKRI_PASSWORD_1=first_password
+RESUME_PATH_1="/home/username/Documents/Resume_Dev.pdf"
+
+# --- Account 2 ---
+NAUKRI_NAME_2="Second Profile"
+NAUKRI_EMAIL_2=second_email@example.com
+NAUKRI_PASSWORD_2=second_password
+RESUME_PATH_2="/home/username/Documents/Resume_Ops.pdf"
+
+# Delay in seconds between processing consecutive accounts
+DELAY_BETWEEN_ACCOUNTS=5
+
+# Global Settings
 RESUME_RENAME_MODE=date_time
-
-# Run in headless mode (true/false)
 HEADLESS=false
-
-# Keep the temporary renamed copy after uploading? (true/false)
 KEEP_RENAMED_COPY=false
+LOGIN_TIMEOUT=120
+```
+
+> [!TIP]
+> If `RESUME_PATH_<N>` is omitted for an account, it automatically falls back to the default `RESUME_PATH`.
+> Single account setups (`NAUKRI_EMAIL`, `NAUKRI_PASSWORD`) remain 100% backward-compatible.
+
+#### Option B: Via `accounts.json`
+Alternatively, you can copy `accounts.example.json` to `accounts.json`:
+```bash
+cp accounts.example.json accounts.json
+```
+```json
+[
+  {
+    "name": "Primary Profile",
+    "email": "first_email@example.com",
+    "password": "first_password",
+    "resume_path": "/home/username/Documents/Resume_1.pdf"
+  },
+  {
+    "name": "Second Profile",
+    "email": "second_email@example.com",
+    "password": "second_password",
+    "resume_path": "/home/username/Documents/Resume_2.pdf"
+  }
+]
 ```
 
 > [!IMPORTANT]
-> Never commit your real `.env` file to GitHub. It is already included in `.gitignore` to protect your login credentials.
+> Never commit your real `.env` or `accounts.json` files to Git. Both are included in `.gitignore` to protect your login credentials.
 
 ---
 
 ## 🚀 Usage
 
 ### 1. Preview the Renaming Format (Dry Run)
-Test how your resume file will be renamed without launching Chrome or logging in:
+Preview how resumes will be formatted for all configured accounts without opening Chrome:
 ```bash
 python3 naukri_updater.py --test-rename
+```
+
+Or test a specific account only:
+```bash
+python3 naukri_updater.py --test-rename --account 1
+python3 naukri_updater.py --test-rename --account "second_email@example.com"
 ```
 
 ### 2. Run the Automation
@@ -112,11 +154,19 @@ Run with a visible browser window (recommended for the first run to complete any
 python3 naukri_updater.py
 ```
 
-### 3. Run in Headless Mode (Background)
-Once verified, run silently without opening a browser window:
+### 3. Run for a Specific Account
+Target an individual account using its 1-based index, name, or email:
+```bash
+python3 naukri_updater.py --account 1
+python3 naukri_updater.py --account "Second Profile"
+```
+
+### 4. Run in Headless Mode (Background / Cron)
+Run all configured accounts silently in the background:
 ```bash
 python3 naukri_updater.py --headless
 ```
+
 
 ---
 

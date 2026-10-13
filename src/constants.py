@@ -80,3 +80,9 @@ CDP_HIDE_WEBDRIVER_SCRIPT = {
 TEMP_DIR_NAME = "temp_resumes"
 ENV_FILE_NAME = ".env"
 ENV_EXAMPLE_NAME = ".env.example"
+ACCOUNTS_FILE_NAME = "accounts.json"
+ACCOUNTS_EXAMPLE_NAME = "accounts.example.json"
+
+# Multi-account configuration
+DELAY_BETWEEN_ACCOUNTS_DEFAULT = 5
+
